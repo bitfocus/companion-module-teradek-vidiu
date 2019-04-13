@@ -1,0 +1,29 @@
+{
+  "name": "teradek-vidiu",
+  "version": "1.0.0",
+  "api_version": "1.0.0",
+  "keywords": [
+    "Teradek"
+  ],
+  "manufacturer": "Teradek",
+  "product": "VidiU",
+  "shortname": "vidiu",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitfocus/companion-module-teradek-vidiu.git"
+  },
+  "author": "Joseph Adams <josephdadams@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "request": "^2.88.0"
+  },
+  "bugs": {
+    "url": "https://github.com/bitfocus/companion-module-teradek-vidiu/issues"
+  },
+  "homepage": "https://github.com/bitfocus/companion-module-teradek-vidiu#readme"
+}
