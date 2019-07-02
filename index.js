@@ -54,13 +54,11 @@ instance.prototype.init_http = function() {
 		}
 		else {     
 			self.status(self.STATE_OK);
-			if (response) {		
-				let cookies = response.headers['set-cookie'];
-				let cookiesString = cookies.toString();
-				let sesID_s = cookiesString.indexOf('serenity-session=');
-				let sesID_e = cookiesString.indexOf(';', sesID_s);
-				sessionID = cookiesString.substring(sesID_s+17, sesID_e);
-			}
+            let cookies = response.headers['set-cookie'];
+            let cookiesString = cookies.toString();
+            let sesID_s = cookiesString.indexOf('serenity-session=');
+            let sesID_e = cookiesString.indexOf(';', sesID_s);
+            sessionID = cookiesString.substring(sesID_s+17, sesID_e);
 		}
 	});
 
@@ -115,6 +113,12 @@ instance.prototype.actions = function() {
 		},
 		'stop_broadcasting': {
 			label: 'Stop Broadcasting'
+		},
+		'start_recording': {
+			label: 'Start Recording'
+		},
+		'stop_recording': {
+			label: 'Stop Recording'
 		}
 
 	});
@@ -131,6 +135,12 @@ instance.prototype.action = function(action) {
 			break;
 		case 'stop_broadcasting':
 			cmd = '/cgi-bin/system.cgi?command=broadcast&action=stop';
+			break;
+		case 'start_recording':
+			cmd = '/cgi-bin/system.cgi?command=recording&action=start';
+			break;
+		case 'stop_recording':
+			cmd = '/cgi-bin/system.cgi?command=recording&action=stop';
 			break;
 	}
 

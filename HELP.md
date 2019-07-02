@@ -10,3 +10,5 @@ This module will allow you to control a Teradek VidiU device.
 **Available actions:**
 * Start Broadcasting
 * Stop Broadcasting
+* Start Recording
+* Stop Recording
