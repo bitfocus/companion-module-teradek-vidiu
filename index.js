@@ -52,13 +52,15 @@ instance.prototype.init_http = function() {
 			//password was not valid
 			self.status(self.STATUS_ERROR, 'Invalid Password');
 		}
-		else {     
+		else if (response && response.headers) {
 			self.status(self.STATE_OK);
             let cookies = response.headers['set-cookie'];
             let cookiesString = cookies.toString();
             let sesID_s = cookiesString.indexOf('serenity-session=');
             let sesID_e = cookiesString.indexOf(';', sesID_s);
             sessionID = cookiesString.substring(sesID_s+17, sesID_e);
+		} else {
+			self.status(self.STATUS_ERROR, 'Request failed');
 		}
 	});
 
