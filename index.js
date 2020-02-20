@@ -54,11 +54,11 @@ instance.prototype.init_http = function() {
 		}
 		else if (response && response.headers) {
 			self.status(self.STATE_OK);
-            let cookies = response.headers['set-cookie'];
-            let cookiesString = cookies.toString();
-            let sesID_s = cookiesString.indexOf('serenity-session=');
-            let sesID_e = cookiesString.indexOf(';', sesID_s);
-            sessionID = cookiesString.substring(sesID_s+17, sesID_e);
+			let cookies = response.headers['set-cookie'];
+			let cookiesString = cookies.toString();
+			let sesID_s = cookiesString.indexOf('serenity-session=');
+			let sesID_e = cookiesString.indexOf(';', sesID_s);
+			sessionID = cookiesString.substring(sesID_s+17, sesID_e);
 		} else {
 			self.status(self.STATUS_ERROR, 'Request failed');
 		}
@@ -159,15 +159,15 @@ instance.prototype.action = function(action) {
 			cookieJarAuth.setCookie(cookie3, url);
 
 			request.get({url: url, jar: cookieJarAuth}, function (error, response, body) {
-                if (body.toString() === '##Access denied#') {
-                    self.status(self.STATUS_ERROR, 'Access denied.');
-                }
-                else if (JSON.parse(body).result === 'success') {
-                    self.status(self.STATE_OK);
-                }
-                else {
-                    self.status(self.STATUS_ERROR, 'Unknown error.');
-                }
+				if (body.toString() === '##Access denied#') {
+					self.status(self.STATUS_ERROR, 'Access denied.');
+				}
+				else if (JSON.parse(body).result === 'success') {
+					self.status(self.STATE_OK);
+				}
+				else {
+					self.status(self.STATUS_ERROR, 'Unknown error.');
+				}
 			});
 		}
 		else {
