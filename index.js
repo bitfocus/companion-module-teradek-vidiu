@@ -38,34 +38,40 @@ instance.prototype.updateConfig = function(config) {
 instance.prototype.init_http = function() {
 	var self = this;
 	
-	//go ahead and log in, get the session cookie going
-	let url = `http://${self.config.host}/cgi-bin/api.cgi`;
+	try {
+		//go ahead and log in, get the session cookie going
+		let url = `http://${self.config.host}/cgi-bin/api.cgi`;
 	
-	let formData = {
-		command: 'login',
-		user: 'admin',
-		passwd: self.config.passwd
-	};
+		let formData = {
+			command: 'login',
+			user: 'admin'
+		};
 	
-	request.post({url: url, form: formData, jar: cookieJar}, function(error, response, body) {
-		if (body==='##Invalid password#') {
-			//password was not valid
-			self.status(self.STATUS_ERROR, 'Invalid Password');
+		if (self.config.passwd) {
+			formData.passwd = self.config.passwd;
 		}
-		else if (response && response.headers) {
-			self.status(self.STATE_OK);
-			let cookies = response.headers['set-cookie'];
-			let cookiesString = cookies.toString();
-			let sesID_s = cookiesString.indexOf('serenity-session=');
-			let sesID_e = cookiesString.indexOf(';', sesID_s);
-			sessionID = cookiesString.substring(sesID_s+17, sesID_e);
-		} else {
-			self.status(self.STATUS_ERROR, 'Request failed');
-		}
-	});
 
-	debug = self.debug;
-	log = self.log;
+		request.post({url: url, form: formData, jar: cookieJar}, function(error, response, body) {
+			if (body==='##Invalid password#') {
+				//password was not valid
+				self.status(self.STATUS_ERROR, 'Invalid Password');
+			}
+			else if (response && response.headers) {
+				self.status(self.STATE_OK);
+				let cookies = response.headers['set-cookie'];
+				let cookiesString = cookies.toString();
+				let sesID_s = cookiesString.indexOf('serenity-session=');
+				let sesID_e = cookiesString.indexOf(';', sesID_s);
+				sessionID = cookiesString.substring(sesID_s+17, sesID_e);
+			} else {
+				self.status(self.STATUS_ERROR, 'Request failed');
+			}
+		});
+	}
+	catch(error) {
+		self.log('error', error);
+		self.status(self.STATUS_ERROR, error);
+	}
 }
 
 // Return config fields for web config
