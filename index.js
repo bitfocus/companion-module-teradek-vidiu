@@ -4,14 +4,6 @@ var instance_skel = require('../../instance_skel');
 var debug;
 var log;
 
-var request = require('request');
-var cookieJar = request.jar();
-var sessionID = null;
-
-var statusInterval;
-var tempInterval;
-var statusData
-
 function instance(system, id, config) {
 	var self = this;
 
@@ -28,6 +20,14 @@ instance.prototype.init = function () {
 
 	debug = self.debug;
 	log = self.log;
+
+	self.request = require('request');
+	self.cookieJar = self.request.jar();
+	self.sessionID = null;
+
+	self.statusInterval;
+	self.tempInterval;
+	self.statusData;
 
 	self.init_http();
 	self.setFeedbackDefinitions(self.getFeedbacks());
@@ -70,7 +70,7 @@ instance.prototype.init_http = function () {
 		}
 
 
-		request.post({ url: url, form: formData, jar: cookieJar }, function (error, response, body) {
+		self.request.post({ url: url, form: formData, jar: self.cookieJar }, function (error, response, body) {
 			console.log(body);
 			if (body === '##Invalid password#') {
 				//password was not valid
@@ -83,7 +83,7 @@ instance.prototype.init_http = function () {
 					let cookiesString = cookies.toString();
 					let sesID_s = cookiesString.indexOf('serenity-session=');
 					let sesID_e = cookiesString.indexOf(';', sesID_s);
-					sessionID = cookiesString.substring(sesID_s + 17, sesID_e);
+					self.sessionID = cookiesString.substring(sesID_s + 17, sesID_e);
 				} catch (error) {
 					self.status(self.STATUS_ERROR, 'Session not authenticated.');
 				}
@@ -187,16 +187,16 @@ instance.prototype.getCommand = function (cmd, path) {
 
 	let url = 'http://' + self.config.host + "/cgi-bin/" + path;
 	try {
-		if (sessionID !== null) {
-			let cookieJarAuth = request.jar();
-			let cookie1 = request.cookie('fw_ver=3.0.8');
-			let cookie2 = request.cookie('passwordChanged=true');
-			let cookie3 = request.cookie('serenity-session=' + sessionID);
+		if (self.sessionID !== null) {
+			let cookieJarAuth = self.request.jar();
+			let cookie1 = self.request.cookie('fw_ver=3.0.8');
+			let cookie2 = self.request.cookie('passwordChanged=true');
+			let cookie3 = self.request.cookie('serenity-session=' + self.sessionID);
 			cookieJarAuth.setCookie(cookie1, url);
 			cookieJarAuth.setCookie(cookie2, url);
 			cookieJarAuth.setCookie(cookie3, url);
 
-			request.get({ url: url, jar: cookieJarAuth }, function (error, response, body) {
+			self.request.get({ url: url, jar: cookieJarAuth }, function (error, response, body) {
 				try {
 					if (body.toString() === '##Access denied#') {
 						self.status(self.STATUS_ERROR, 'Access denied.');
@@ -310,16 +310,16 @@ instance.prototype.action = function (action) {
 	if (cmd !== undefined) {
 		let url = 'http://' + self.config.host + cmd;
 
-		if (sessionID !== null) {
-			let cookieJarAuth = request.jar();
-			let cookie1 = request.cookie('fw_ver=3.0.8');
-			let cookie2 = request.cookie('passwordChanged=true');
-			let cookie3 = request.cookie('serenity-session=' + sessionID);
+		if (self.sessionID !== null) {
+			let cookieJarAuth = self.request.jar();
+			let cookie1 = self.request.cookie('fw_ver=3.0.8');
+			let cookie2 = self.request.cookie('passwordChanged=true');
+			let cookie3 = self.request.cookie('serenity-session=' + self.sessionID);
 			cookieJarAuth.setCookie(cookie1, url);
 			cookieJarAuth.setCookie(cookie2, url);
 			cookieJarAuth.setCookie(cookie3, url);
 
-			request.get({ url: url, jar: cookieJarAuth }, function (error, response, body) {
+			self.request.get({ url: url, jar: cookieJarAuth }, function (error, response, body) {
 				try {
 					if (body.toString() === '##Access denied#') {
 						self.status(self.STATUS_ERROR, 'Access denied.');
