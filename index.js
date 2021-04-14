@@ -27,6 +27,7 @@ instance.prototype.init = function () {
 
 	self.statusInterval;
 	self.tempInterval;
+	self.codecInterval;
 	self.statusData;
 
 	self.init_http();
@@ -71,7 +72,7 @@ instance.prototype.init_http = function () {
 
 
 		self.request.post({ url: url, form: formData, jar: self.cookieJar }, function (error, response, body) {
-			console.log(body);
+			//console.log(body);
 			if (body === '##Invalid password#') {
 				//password was not valid
 				self.status(self.STATUS_ERROR, 'Invalid Password');
@@ -93,6 +94,9 @@ instance.prototype.init_http = function () {
 				self.tempInterval = setInterval(function () {
 					self.getCommand("temp", "json.cgi?command=geti&q=System.Info.CPU.Temp");
 				}, 1000);
+				self.codecInterval = setInterval(function () {
+					self.getCommand("codec", "json.cgi?command=geti&q=Codec.Status");
+				}, 500);
 				self.getCommand("product", "json.cgi?command=geti&q=System.Info.Product");
 
 			} else {
@@ -147,9 +151,10 @@ instance.prototype.destroy = function () {
 
 instance.prototype.clearIntervals = function () {
 	var self = this;
+	
 	clearInterval(self.statusInterval);
 	clearInterval(self.tempInterval);
-
+	clearInterval(self.codecInterval);
 }
 
 
@@ -202,7 +207,7 @@ instance.prototype.getCommand = function (cmd, path) {
 						self.status(self.STATUS_ERROR, 'Access denied.');
 					}
 
-					else if (JSON.parse(body).result === 'success' || cmd == "temp" || cmd == "product") {
+					else if (JSON.parse(body).result === 'success' || cmd == "temp" || cmd == "product" || cmd == "codec") {
 						self.status(self.STATE_OK);
 						var returnData = JSON.parse(body);
 
@@ -243,6 +248,10 @@ instance.prototype.getCommand = function (cmd, path) {
 								self.setVariable('vidiu_firmversion', returnData.System.Info.Product['productversion']);
 								break;
 
+							case 'codec':
+								var codecStream = JSON.parse(returnData.Codec.Status['stream1']);
+								self.setVariable('stream1_bitrate', codecStream['encoder']['current_bitrate']);
+								break;
 
 						}
 					}
@@ -592,6 +601,10 @@ instance.prototype.getVariables = function () {
 		{
 			label: 'CPU Temp F',
 			name: 'cpu_temp_f'
+		},
+		{
+			label: 'Stream 1 Bitrate',
+			name: 'stream1_bitrate'
 		},
 
 	];
