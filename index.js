@@ -161,7 +161,7 @@ instance.prototype.clearIntervals = function () {
 instance.prototype.actions = function () {
 	var self = this;
 
-	self.system.emit('instance_actions', self.id, {
+	self.setActions({
 
 		'start_broadcasting': {
 			label: 'Start Broadcasting'
