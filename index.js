@@ -25,6 +25,7 @@ instance.prototype.init = function () {
 	self.cookieJar = self.request.jar();
 	self.sessionID = null;
 
+	self.checkagainInterval;  // if no response from device, check again interval
 	self.statusInterval;
 	self.tempInterval;
 	self.codecInterval;
@@ -76,9 +77,12 @@ instance.prototype.init_http = function () {
 			if (body === '##Invalid password#') {
 				//password was not valid
 				self.status(self.STATUS_ERROR, 'Invalid Password');
+				self.log('debug', 'init_http: Invalid Password');  // Temporary debug
 			}
 			else if (response && response.headers) {
 				self.status(self.STATE_OK);
+				clearInterval(self.checkagainInterval);  // device is on network, so clear check again
+				self.log('info', 'State is OK');  // Temporary debug
 				let cookies = response.headers['set-cookie'];
 				try {
 					let cookiesString = cookies.toString();
@@ -87,25 +91,32 @@ instance.prototype.init_http = function () {
 					self.sessionID = cookiesString.substring(sesID_s + 17, sesID_e);
 				} catch (error) {
 					self.status(self.STATUS_ERROR, 'Session not authenticated.');
+					self.log('debug', 'init_http: Session not authenticated.');  // Temporary debug
 				}
-				self.statusInterval = setInterval(function () {
-					self.getCommand("status", "system.cgi?command=status");
-				}, 500);
-				self.tempInterval = setInterval(function () {
-					self.getCommand("temp", "json.cgi?command=geti&q=System.Info.CPU.Temp");
-				}, 1000);
-				self.codecInterval = setInterval(function () {
-					self.getCommand("codec", "json.cgi?command=geti&q=Codec.Status");
-				}, 500);
+				// Set Interval collections if not a VidiU Go
+				if (self.config.is_vidiugo != 'yes') {
+					self.statusInterval = setInterval(function () {
+						self.getCommand("status", "system.cgi?command=status");
+					}, 500)
+					self.tempInterval = setInterval(function () {
+						self.getCommand("temp", "json.cgi?command=geti&q=System.Info.CPU.Temp");
+					}, 1000);
+					self.codecInterval = setInterval(function () {
+						self.getCommand("codec", "json.cgi?command=geti&q=Codec.Status");
+					}, 500);
+				} else {
+					self.setStatusCheck(); // VidiU Go status using setTimeout
+				}
 				self.getCommand("product", "json.cgi?command=geti&q=System.Info.Product");
 
 			} else {
 				self.status(self.STATUS_ERROR, 'Request failed');
+				self.checkDeviceOnline();  // Check in a bit to see if the device comes on network
 			}
 		});
 	}
 	catch (error) {
-		self.log('error', error);
+		self.log('error', error.message); //	self.log('error', error);
 		self.status(self.STATUS_ERROR, 'Session not authenticated.');
 	}
 	debug = self.debug;
@@ -138,6 +149,17 @@ instance.prototype.config_fields = function () {
 			label: 'Password',
 			width: 6,
 			default: ''
+		},
+		{
+			type: 'dropdown',
+			label: 'Reduce functionality for VidiU Go compatibility?',
+			id: 'is_vidiugo',
+			default: 'no',
+			width: 6,
+			choices: [
+				{ id: 'no', label: 'No' },
+				{ id: 'yes', label: 'Yes' },
+			],
 		}
 	]
 };
@@ -152,6 +174,7 @@ instance.prototype.destroy = function () {
 instance.prototype.clearIntervals = function () {
 	var self = this;
 	
+	clearInterval(self.checkagainInterval);  // clear check again if service is running
 	clearInterval(self.statusInterval);
 	clearInterval(self.tempInterval);
 	clearInterval(self.codecInterval);
@@ -183,6 +206,30 @@ instance.prototype.actions = function () {
 		}
 
 	});
+}
+
+// Set Timeout for status check - VidiU Go Compatibility
+instance.prototype.setStatusCheck = function () {
+	var self = this;
+
+	if (self.config.is_vidiugo == 'yes') {
+		self.statusInterval = setTimeout(function () {
+			self.getCommand("status", "system.cgi?command=status");
+		}, 1000)
+	}
+	
+}
+
+// See if the device comes on network in an interval - VidiU Go Compatibility
+instance.prototype.checkDeviceOnline = function () {
+	var self = this;
+
+	if (self.config.is_vidiugo == 'yes') {
+		self.checkagainInterval  = setTimeout(function () {
+			self.init_http();
+		}, 10000);
+	}	
+	
 }
 
 
@@ -234,6 +281,7 @@ instance.prototype.getCommand = function (cmd, path) {
 								self.setVariable('codec_state', self.statusData['Codec-State']);
 								self.setVariable('broadcast_error', self.statusData['Broadcast-Error']);
 
+								self.setStatusCheck();  // VidiU Go status using setTimeout
 
 								break;
 
@@ -259,8 +307,9 @@ instance.prototype.getCommand = function (cmd, path) {
 						self.status(self.STATUS_ERROR, 'Unknown error.');
 					}
 				} catch (error) {
-					self.log('error', error);
-					self.status(self.STATUS_ERROR, error);
+					let myerror = 'Get command '+ cmd +': ' + error.message;	
+					self.log('error', myerror);
+					self.status(self.STATUS_ERROR, myerror);	
 					self.clearIntervals();
 					self.init_http();
 				}
@@ -273,7 +322,12 @@ instance.prototype.getCommand = function (cmd, path) {
 			self.init_http();
 		}
 	} catch (error) {
-		self.log('error', error);
+		// If VidiU Go, don't send unedited error
+		if (self.config.is_vidiugo == 'yes') {
+			self.log('error', 'Session not authenticated error suspected while get command.');
+		} else {
+			self.log('error', error);
+		}	
 		self.status(self.STATUS_ERROR, 'Session not authenticated.');
 		self.clearIntervals();
 		self.init_http();
